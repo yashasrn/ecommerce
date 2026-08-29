@@ -13,7 +13,6 @@ import AddProduct from "./pages/AddProduct";
 import SellerLogin from "./pages/SellerLogin";
 import ProductsList from "./pages/ProductList";
 import ProtectedSellerRoute from "./components/ProtectedSellerRoute";
-import ChatBot from './pages/ChatBot'; 
 import SellerSignup from "./pages/SellerSignup";
 import SellerDashboard from "./components/SellerDashboard";
 import EditProduct from "./components/EditProduct";
@@ -88,10 +87,7 @@ function App() {
         <Route path="/product" element={<ProductsList />} />
       </Routes>
 
-      {/* ================================ */}
-      {/*  CHATBOT - AVAILABLE ON ALL PAGES */}
-      {/* ================================ */}
-      <ChatBot />
+      {/* Chatbot removed */}
     </Router>
   );
 }

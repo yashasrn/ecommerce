@@ -26,9 +26,8 @@ CORS(app)
 EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD") 
 
-# ------------------- HUGGING FACE CONFIG -------------------
-HF_API_KEY = os.getenv("HF_API_KEY",)
-HF_API_URL = os.getenv("HF_API_URL")
+# ------------------- HUGGING FACE CONFIG (disabled) -------------------
+# Hugging Face chatbot integration removed. Keep FakeStore API env var.
 FAKESTORE_API = os.getenv("FAKESTORE_API_URL")
 
 # In-memory OTP store
@@ -393,57 +392,7 @@ def search_fakestore_products(query):
             break
     
     return matches
-
-def call_huggingface_api(messages, max_tokens=150, temperature=0.7):
-    """Call Hugging Face Inference API"""
-    try:
-        # Build prompt from messages
-        prompt = ""
-        for msg in messages:
-            role = msg.get('role', 'user')
-            content = msg.get('content', '')
-            
-            if role == 'system':
-                prompt += f"System: {content}\n\n"
-            elif role == 'user':
-                prompt += f"User: {content}\n"
-            elif role == 'assistant':
-                prompt += f"Assistant: {content}\n"
-        
-        prompt += "Assistant:"
-        
-        headers = {
-            "Authorization": f"Bearer {HF_API_KEY}",
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "inputs": prompt,
-            "parameters": {
-                "max_new_tokens": max_tokens,
-                "temperature": temperature,
-                "top_p": 0.9,
-                "do_sample": True,
-                "return_full_text": False
-            }
-        }
-        
-        response = requests.post(HF_API_URL, headers=headers, json=payload, timeout=30)
-        
-        if response.status_code == 200:
-            result = response.json()
-            if isinstance(result, list) and len(result) > 0:
-                return result[0].get('generated_text', '').strip()
-            return str(result)
-        elif response.status_code == 503:
-            return "MODEL_LOADING"
-        else:
-            print(f" HF API Error: {response.status_code} - {response.text}")
-            return None
-            
-    except Exception as e:
-        print(f" HF API Exception: {str(e)}")
-        return None
+    return matches
 
 # ------------------- HELPER FUNCTIONS -------------------
 
@@ -540,7 +489,6 @@ def home():
         "endpoints": {
             "auth": ["/signup", "/login", "/seller-login"],
             "products": ["/products", "/add-product"],
-            "chat": ["/chat", "/chat-product-search"],
             "forgot_password": ["/forgot-password/send-otp"]
         }
     }), 200
@@ -2099,239 +2047,11 @@ def get_contact_messages():
     finally:
         conn.close()
 
-# ------------------- CHATBOT WITH HUGGING FACE -------------------
-@app.route("/chat", methods=["POST"])
-def chat():
-    data = request.json
-    user_message = data.get("message", "").strip()
-    
-    if not user_message:
-        return jsonify({"error": "Message is required"}), 400
-    
-    print(f"\n{'='*60}")
-    print(f" Incoming message: {user_message}")
-    print(f"{'='*60}")
-    
-    try:
-        system_prompt = """You are Emma, a friendly AI customer support assistant for MyStore, an e-commerce platform. 
-        You help customers with:
-        - Product inquiries
-        - Order tracking
-        - Return policies
-        - Account issues
-        - General shopping questions
-        
-        Be friendly, professional, and concise. If you don't know something, admit it and suggest contacting support."""
-        
-        print(" Calling Hugging Face API...")
-        
-        messages = [
-            {'role': 'system', 'content': system_prompt},
-            {'role': 'user', 'content': user_message}
-        ]
-        
-        bot_reply = call_huggingface_api(messages, max_tokens=150, temperature=0.7)
-        
-        if bot_reply and bot_reply != "MODEL_LOADING":
-            print(f" Bot replied: {bot_reply[:100]}...")
-            print(f"{'='*60}\n")
-            
-            return jsonify({
-                "reply": bot_reply,
-                "success": True,
-                "timestamp": time.strftime('%Y-%m-%d %H:%M:%S')
-            }), 200
-        
-        elif bot_reply == "MODEL_LOADING":
-            return jsonify({
-                "reply": "I'm waking up! This might take 20-30 seconds. Please ask again in a moment. 😊",
-                "success": False,
-                "fallback": True,
-                "model_loading": True
-            }), 200
-        
-        else:
-            raise Exception("No response from AI")
-        
-    except Exception as e:
-        import traceback
-        error_details = traceback.format_exc()
-        
-        print(f" ERROR!")
-        print(f"   Type: {type(e).__name__}")
-        print(f"   Message: {str(e)}")
-        print(error_details)
-        print(f"{'='*60}\n")
-        
-        fallback_responses = {
-            "shipping": "We offer free shipping on orders over $50! Standard delivery takes 3-5 business days. 📦",
-            "return": "We have a hassle-free 30-day return policy! Email support@mystore.com with your order number. 🔄",
-            "payment": "We accept all major credit cards, PayPal, and debit cards. All transactions are SSL secured. 💳",
-            "default": "I'm having trouble connecting right now. Please email us at support@mystore.com or call 1-800-MYSTORE. We're here 24/7! 😊"
-        }
-        
-        user_lower = user_message.lower()
-        if any(word in user_lower for word in ['ship', 'delivery', 'track']):
-            fallback = fallback_responses['shipping']
-        elif any(word in user_lower for word in ['return', 'refund', 'exchange']):
-            fallback = fallback_responses['return']
-        elif any(word in user_lower for word in ['pay', 'payment', 'credit', 'card']):
-            fallback = fallback_responses['payment']
-        else:
-            fallback = fallback_responses['default']
-        
-        return jsonify({
-            "reply": fallback,
-            "success": False,
-            "fallback": True,
-            "error_type": type(e).__name__,
-            "error_message": str(e)
-        }), 200
-
-# ------------------- CHAT WITH CONVERSATION HISTORY -------------------
-@app.route("/chat-with-history", methods=["POST"])
-def chat_with_history():
-    data = request.json
-    user_message = data.get("message", "").strip()
-    conversation_history = data.get("history", [])
-    
-    if not user_message:
-        return jsonify({"error": "Message is required"}), 400
-    
-    try:
-        system_prompt = """You are Emma, MyStore's friendly AI assistant. You help customers with shopping, orders, returns, and general questions. Be helpful, concise, and friendly!"""
-        
-        messages = [{'role': 'system', 'content': system_prompt}]
-        messages.extend(conversation_history[-6:])
-        messages.append({'role': 'user', 'content': user_message})
-        
-        bot_reply = call_huggingface_api(messages, max_tokens=150, temperature=0.7)
-        
-        if bot_reply and bot_reply != "MODEL_LOADING":
-            return jsonify({
-                "reply": bot_reply,
-                "success": True,
-                "timestamp": time.strftime('%Y-%m-%d %H:%M:%S')
-            }), 200
-        else:
-            raise Exception("No response from AI")
-        
-    except Exception as e:
-        print(f" Chatbot Error: {str(e)}")
-        return jsonify({
-            "reply": "I'm experiencing technical difficulties. Please try again or contact support@mystore.com 💙",
-            "success": False,
-            "fallback": True
-        }), 200
-
-# ------------------- SMART PRODUCT SEARCH CHATBOT (FakeStore API) -------------------
-@app.route("/chat-product-search", methods=["POST"])
+# Chatbot endpoints removed
+# The chatbot (Hugging Face / product-search) functionality has been removed per project configuration.
+# If you need to re-enable it later, restore the routes and helper functions.
 def chat_product_search():
-    data = request.json
-    user_message = data.get("message", "").strip()
-    
-    if not user_message:
-        return jsonify({"error": "Message is required"}), 400
-    
-    try:
-        print(f" Searching FakeStore API for: {user_message}")
-        
-        # Search FakeStore API
-        fakestore_products = search_fakestore_products(user_message)
-        
-        # Also search your database
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT title, price, category, image 
-            FROM Products 
-            WHERE status = 'published' 
-            AND (title ILIKE %s OR category ILIKE %s OR description ILIKE %s)
-            LIMIT 3
-        """, (f'%{user_message}%', f'%{user_message}%', f'%{user_message}%'))
-        
-        db_products = cursor.fetchall()
-        conn.close()
-        
-        all_products = []
-        
-        # Add FakeStore products
-        for p in fakestore_products[:2]:
-            all_products.append({
-                "title": p.get('title', 'Unknown'),
-                "price": float(p.get('price', 0)),
-                "category": p.get('category', 'General'),
-                "image": p.get('image', ''),
-                "source": "fakestore"
-            })
-        
-        # Add database products
-        for p in db_products[:2]:
-            all_products.append({
-                "title": p[0],
-                "price": float(p[1]),
-                "category": p[2],
-                "image": p[3],
-                "source": "mystore"
-            })
-        
-        if all_products:
-            product_info = "\n".join([
-                f"- {p['title']} (${p['price']}) in {p['category']} category"
-                for p in all_products
-            ])
-            
-            enhanced_prompt = f"""You are Emma, MyStore's AI shopping assistant. 
-
-The customer asked: "{user_message}"
-
-We found these relevant products:
-{product_info}
-
-Recommend these products naturally, mention their prices, and be enthusiastic but not pushy! Keep it under 100 words."""
-        
-            messages = [
-                {'role': 'system', 'content': enhanced_prompt},
-                {'role': 'user', 'content': user_message}
-            ]
-            
-            bot_reply = call_huggingface_api(messages, max_tokens=200, temperature=0.8)
-            
-            if not bot_reply or bot_reply == "MODEL_LOADING":
-                bot_reply = f"I found {len(all_products)} great products for you! Check them out below. 🛍️"
-            
-            return jsonify({
-                "reply": bot_reply,
-                "products": all_products,
-                "success": True
-            }), 200
-        
-        # No products found
-        system_prompt = """You are Emma, a helpful shopping assistant for MyStore. The customer is asking about products we don't have. Politely let them know and suggest browsing our categories or contacting support. Keep it friendly and under 50 words."""
-        
-        messages = [
-            {'role': 'system', 'content': system_prompt},
-            {'role': 'user', 'content': user_message}
-        ]
-        
-        bot_reply = call_huggingface_api(messages)
-        
-        if not bot_reply:
-            bot_reply = "I couldn't find exact matches for that. Try browsing our categories or contact support for help! 🛍️"
-        
-        return jsonify({
-            "reply": bot_reply,
-            "products": [],
-            "success": True
-        }), 200
-        
-    except Exception as e:
-        print(f" Product Search Error: {str(e)}")
-        return jsonify({
-            "reply": "I'm having trouble searching products right now. Please browse our categories or contact support! 🛍️",
-            "success": False
-        }), 200
+    return jsonify({"error": "Chatbot removed from this application."}), 410
 
 # ------------------- RUN APP -------------------
 if __name__ == "__main__":
