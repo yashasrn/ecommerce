@@ -4,6 +4,7 @@ import smtplib
 import random
 import time
 import re
+import sys
 from dotenv import load_dotenv
 import psycopg2
 from psycopg2.extras import RealDictCursor
