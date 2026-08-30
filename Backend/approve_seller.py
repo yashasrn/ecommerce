@@ -8,13 +8,13 @@ import bcrypt
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/ecommerce")
 EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 
 # Database connection
 def get_db():
-    return psycopg2.connect(DATABASE_URL, sslmode='require')
+    return psycopg2.connect(DATABASE_URL)
 
 # ================= EMAIL FUNCTION =================
 def send_status_email(seller_name, seller_email, store_name, status):

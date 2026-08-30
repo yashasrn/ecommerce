@@ -17,7 +17,7 @@ import os
 load_dotenv()
 
 # ------------------- DATABASE SETUP -------------------
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/ecommerce")
 
 # ------------------- FLASK APP -------------------
 app = Flask(__name__)
@@ -323,8 +323,8 @@ DEMO_PRODUCTS = [
 ]
 # ------------------- DATABASE HELPER -------------------
 def get_db_connection():
-    """Get PostgreSQL database connection"""
-    return psycopg2.connect(DATABASE_URL, sslmode='require')
+    """Get PostgreSQL database connection."""
+    return psycopg2.connect(DATABASE_URL)
 
 # ------------------- HUGGING FACE HELPERS -------------------
 def get_fakestore_products():
@@ -425,6 +425,32 @@ def log_product_activity(product_id, seller_email, seller_name, action, product_
             conn.close()
 
 
+def send_email_safely(to_email, subject, body):
+    """Send email if credentials are valid, otherwise skip silently for local dev."""
+    if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
+        print("📧 Email credentials not configured. Skipping SMTP send in local dev mode.")
+        return False
+
+    try:
+        msg = MIMEMultipart()
+        msg["From"] = EMAIL_ADDRESS
+        msg["To"] = to_email
+        msg["Subject"] = subject
+        msg.attach(MIMEText(body, "plain", "utf-8"))
+
+        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
+            smtp.starttls()
+            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            smtp.send_message(msg)
+
+        print(f"✅ Email sent to {to_email}")
+        return True
+
+    except Exception as e:
+        print(f"⚠️ Email skipped in local dev mode: {str(e)}")
+        return False
+
+
 def send_activity_email(seller_email, seller_name, action, product_title, details=""):
     """Send email notification for product actions"""
     try:
@@ -462,22 +488,12 @@ View your dashboard: http://localhost:5173/seller-dashboard
 Best regards,
 MyStore Team
 """
-        
-        msg = MIMEMultipart()
-        msg["From"] = EMAIL_ADDRESS
-        msg["To"] = seller_email
-        msg["Subject"] = subject
-        msg.attach(MIMEText(body, "plain", "utf-8"))
 
-        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
-            smtp.starttls()
-            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-            smtp.send_message(msg)
-        
-        print(f" Email sent to {seller_email} for {action}")
+        send_email_safely(seller_email, subject, body)
+        print(f" Email notification attempted for {seller_email} for {action}")
         
     except Exception as e:
-        print(f" Error sending email: {str(e)}")
+        print(f" Error preparing activity email: {str(e)}")
 
 # ------------------- HOME / HEALTH CHECK -------------------
 @app.route("/", methods=["GET"])
@@ -656,16 +672,7 @@ Phone: {addressInfo.get('phone')}
 """
 
     try:
-        msg = MIMEMultipart()
-        msg["From"] = EMAIL_ADDRESS
-        msg["To"] = email
-        msg["Subject"] = "Your Order Confirmation"
-        msg.attach(MIMEText(body, "plain", "utf-8"))
-
-        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
-            smtp.starttls()
-            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-            smtp.send_message(msg)
+        send_email_safely(email, "Your Order Confirmation", body)
 
         return jsonify({"message": "Order confirmation email sent successfully!"})
     except Exception as e:
@@ -723,16 +730,7 @@ If you didn't request this, please ignore this email.
 Best regards,
 MyStore Team
 """
-        msg = MIMEMultipart()
-        msg["From"] = EMAIL_ADDRESS
-        msg["To"] = email
-        msg["Subject"] = subject
-        msg.attach(MIMEText(body, "plain", "utf-8"))
-
-        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
-            smtp.starttls()
-            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-            smtp.send_message(msg)
+        send_email_safely(email, subject, body)
 
         return jsonify({"message": "OTP sent to your email!"}), 200
 
@@ -839,16 +837,7 @@ If you didn't make this change, please contact support immediately.
 Best regards,
 MyStore Team
 """
-        msg = MIMEMultipart()
-        msg["From"] = EMAIL_ADDRESS
-        msg["To"] = email
-        msg["Subject"] = subject
-        msg.attach(MIMEText(body, "plain", "utf-8"))
-
-        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
-            smtp.starttls()
-            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-            smtp.send_message(msg)
+        send_email_safely(email, subject, body)
 
         return jsonify({"message": "Password reset successful! Redirecting to login..."}), 200
 
@@ -999,18 +988,11 @@ Store Name: {storeName}
 Best,
 MyStore Team
 """
-        msg = MIMEMultipart()
-        msg["From"] = EMAIL_ADDRESS
-        msg["To"] = email
-        msg["Subject"] = subject
-        msg.attach(MIMEText(body, "plain", "utf-8"))
+        send_email_safely(email, subject, body)
 
-        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
-            smtp.starttls()
-            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-            smtp.send_message(msg)
-
-        return jsonify({"message": "Seller application submitted successfully! Check your email for confirmation."}), 201
+        return jsonify({
+            "message": "Seller application submitted successfully! Your request is saved and pending admin approval."
+        }), 201
 
     except Exception as e:
         print(" Error during seller signup:", str(e))
@@ -1146,18 +1128,9 @@ Login to Dashboard: http://localhost:5173/seller-dashboard
 Best regards,
 MyStore Team
 """
-        msg = MIMEMultipart()
-        msg["From"] = EMAIL_ADDRESS
-        msg["To"] = seller_email
-        msg["Subject"] = subject
-        msg.attach(MIMEText(body, "plain", "utf-8"))
-
-        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
-            smtp.starttls()
-            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-            smtp.send_message(msg)
+        send_email_safely(seller_email, subject, body)
         
-        print(f"📧 Email sent to {seller_email}")
+        print(f"📧 Product email notification attempted for {seller_email}")
 
         return jsonify({
             "message": "Product saved as draft! Check your email and dashboard.",
@@ -1617,75 +1590,101 @@ def get_products():
 @app.route("/admin/seed-fakestore", methods=["GET"])
 def seed_fakestore():
     """Seed database with professional demo products"""
+    conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
+        demo_email = "demo@mystoreplatform.com"
+        demo_name = "Demo Store"
+
+        # Ensure the seller row exists because Products references Sellers(email)
+        cursor.execute(
+            """
+            INSERT INTO Sellers (fullname, email, password, store_name, store_description, status)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            ON CONFLICT (email) DO NOTHING
+            """,
+            (
+                demo_name,
+                demo_email,
+                bcrypt.hashpw(b"demo123456", bcrypt.gensalt()).decode("utf-8"),
+                demo_name,
+                "Official demo store for local storefront testing.",
+                "approved",
+            ),
+        )
+        conn.commit()
+
         # Check if already seeded
-        cursor.execute("SELECT COUNT(*) FROM Products WHERE seller_name = 'Demo Store'")
+        cursor.execute("SELECT COUNT(*) FROM Products WHERE seller_name = %s", (demo_name,))
         existing_count = cursor.fetchone()[0]
-        
+
         if existing_count > 0:
             return jsonify({
                 "message": f" Already seeded! {existing_count} demo products exist.",
                 "skipped": True,
                 "existing_count": existing_count
             }), 200
-        
+
         print("📦 Seeding database with professional demo products...")
-        
-        # Get demo products
-        demo_products = DEMO_PRODUCTS  # Changed from get_fakestore_products()
-        
+
+        demo_products = DEMO_PRODUCTS
+
         if not demo_products or len(demo_products) == 0:
             return jsonify({"error": "No demo products available"}), 500
-        
+
         print(f"✅ Found {len(demo_products)} demo products")
-        
-        # Insert into database
+
         inserted = 0
         errors = []
-        
+
         for product in demo_products:
             try:
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT INTO Products (title, price, description, category, image, seller_email, seller_name, status)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, (
-                    product.get('title', 'Unknown Product'),
-                    float(product.get('price', 0)),
-                    product.get('description', 'No description available'),
-                    product.get('category', 'general'),
-                    product.get('image', 'https://via.placeholder.com/300'),
-                    'demo@mystoreplatform.com',  
-                    'Demo Store',  
-                    'published'
-                ))
+                    """,
+                    (
+                        product.get('title', 'Unknown Product'),
+                        float(product.get('price', 0)),
+                        product.get('description', 'No description available'),
+                        product.get('category', 'general'),
+                        product.get('image', 'https://via.placeholder.com/300'),
+                        demo_email,
+                        demo_name,
+                        'published',
+                    ),
+                )
                 inserted += 1
             except Exception as e:
+                conn.rollback()
                 error_msg = f"Error inserting '{product.get('title', 'Unknown')}': {str(e)}"
                 print(f" {error_msg}")
                 errors.append(error_msg)
-                continue
-        
+                break
+
         conn.commit()
-        
+
         print(f"✅ Successfully inserted {inserted}/{len(demo_products)} products")
-        
+
         response_data = {
             "message": f"✅ Successfully seeded database with {inserted} demo products!",
             "inserted": inserted,
             "total_available": len(demo_products),
             "success": True
         }
-        
+
         if errors:
             response_data["errors"] = errors[:5]
             response_data["error_count"] = len(errors)
-        
+
         return jsonify(response_data), 200
-        
+
     except Exception as e:
+        if conn is not None:
+            conn.rollback()
         import traceback
         print(f" Error seeding database: {str(e)}")
         print(traceback.format_exc())
@@ -1694,7 +1693,7 @@ def seed_fakestore():
             "type": type(e).__name__
         }), 500
     finally:
-        if conn:
+        if conn is not None:
             conn.close()
 
 # ------------------- DEBUG: TEST FAKESTORE API CONNECTION -------------------
@@ -1890,16 +1889,7 @@ Best regards,
 MyStore Team
 """
 
-        msg = MIMEMultipart()
-        msg["From"] = EMAIL_ADDRESS
-        msg["To"] = email
-        msg["Subject"] = subject
-        msg.attach(MIMEText(body, "plain", "utf-8"))
-
-        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
-            smtp.starttls()
-            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-            smtp.send_message(msg)
+        send_email_safely(email, subject, body)
 
         return jsonify({"message": f"Seller status updated to {new_status} and email sent."})
 
@@ -1958,18 +1948,9 @@ MyStore Support Team
 This is an automated confirmation email.
 """
 
-        msg = MIMEMultipart()
-        msg["From"] = EMAIL_ADDRESS
-        msg["To"] = email
-        msg["Subject"] = user_subject
-        msg.attach(MIMEText(user_body, "plain", "utf-8"))
+        send_email_safely(email, user_subject, user_body)
 
-        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
-            smtp.starttls()
-            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-            smtp.send_message(msg)
-
-        print(f" Confirmation email sent to {email}")
+        print(f" Confirmation email attempt sent to {email}")
 
         admin_subject = f"🔔 New Contact Message from {name}"
         admin_body = f"""
@@ -1986,18 +1967,9 @@ Message:
 Received at: {time.strftime('%B %d, %Y at %I:%M %p')}
 """
 
-        admin_msg = MIMEMultipart()
-        admin_msg["From"] = EMAIL_ADDRESS
-        admin_msg["To"] = EMAIL_ADDRESS
-        admin_msg["Subject"] = admin_subject
-        admin_msg.attach(MIMEText(admin_body, "plain", "utf-8"))
+        send_email_safely(EMAIL_ADDRESS, admin_subject, admin_body)
 
-        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
-            smtp.starttls()
-            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-            smtp.send_message(admin_msg)
-
-        print(f" Admin notification sent")
+        print(f" Admin notification attempt sent")
 
         return jsonify({
             "message": "Thank you for contacting us! We'll get back to you soon.",

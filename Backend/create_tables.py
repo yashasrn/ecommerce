@@ -3,9 +3,9 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-# REPLACE THIS with your External Database URL from Render
-
-DATABASE_URL = os.getenv("DATABASE_URL")
+# Default to a local PostgreSQL database for development.
+# Override with a production DATABASE_URL when you deploy later.
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/ecommerce")
 
 print("Starting database setup...")
 print("=" * 50)
@@ -13,7 +13,7 @@ print("=" * 50)
 try:
     # Connect to database
     print(" Connecting to database...")
-    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+    conn = psycopg2.connect(DATABASE_URL)
     cursor = conn.cursor()
     print(" Connected successfully!")
     print("=" * 50)
@@ -111,7 +111,7 @@ try:
             description TEXT,
             price DECIMAL(10,2) NOT NULL,
             category VARCHAR(100),
-            image VARCHAR(500),
+            image TEXT,
             seller_email VARCHAR(100) NOT NULL REFERENCES Sellers(email),
             seller_name VARCHAR(255),
             status VARCHAR(20) DEFAULT 'draft',
