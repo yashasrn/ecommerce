@@ -192,8 +192,8 @@ resource "aws_cloudwatch_dashboard" "infrastructure" {
         width  = 12
         height = 6
         properties = {
-          title   = "ALB Request Count & Target Response Time"
-          region  = var.aws_region
+          title  = "ALB Request Count & Target Response Time"
+          region = var.aws_region
           metrics = [
             ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", var.alb_arn_suffix, { stat = "Sum", yAxis = "left" }],
             [".", "TargetResponseTime", "LoadBalancer", var.alb_arn_suffix, "TargetGroup", var.alb_target_group_arn_suffix, { stat = "Average", yAxis = "right" }]
@@ -210,8 +210,8 @@ resource "aws_cloudwatch_dashboard" "infrastructure" {
         width  = 12
         height = 6
         properties = {
-          title   = "ALB HTTP Response Codes (2XX, 4XX, 5XX)"
-          region  = var.aws_region
+          title  = "ALB HTTP Response Codes (2XX, 4XX, 5XX)"
+          region = var.aws_region
           metrics = [
             ["AWS/ApplicationELB", "HTTPCode_Target_2XX_Count", "LoadBalancer", var.alb_arn_suffix, "TargetGroup", var.alb_target_group_arn_suffix, { stat = "Sum", color = "#2ca02c" }],
             [".", "HTTPCode_Target_4XX_Count", ".", ".", ".", ".", { stat = "Sum", color = "#ff7f0e" }],
@@ -229,8 +229,8 @@ resource "aws_cloudwatch_dashboard" "infrastructure" {
         width  = 12
         height = 6
         properties = {
-          title   = "ECS Cluster CPU & Memory Utilization"
-          region  = var.aws_region
+          title  = "ECS Cluster CPU & Memory Utilization"
+          region = var.aws_region
           metrics = [
             ["AWS/ECS", "CPUUtilization", "ClusterName", var.ecs_cluster_name, { stat = "Average", color = "#1f77b4" }],
             [".", "MemoryUtilization", ".", ".", { stat = "Average", color = "#ff7f0e" }]
@@ -253,8 +253,8 @@ resource "aws_cloudwatch_dashboard" "infrastructure" {
         width  = 12
         height = 6
         properties = {
-          title   = "RDS PostgreSQL: CPU, Memory & Connections"
-          region  = var.aws_region
+          title  = "RDS PostgreSQL: CPU, Memory & Connections"
+          region = var.aws_region
           metrics = [
             ["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", var.rds_instance_id, { stat = "Average", yAxis = "left" }],
             [".", "DatabaseConnections", ".", ".", { stat = "Average", yAxis = "right" }],
@@ -284,8 +284,8 @@ resource "aws_cloudwatch_dashboard" "application" {
         width  = 12
         height = 6
         properties = {
-          title   = "ECS Backend Service Task Count (Running vs Desired)"
-          region  = var.aws_region
+          title  = "ECS Backend Service Task Count (Running vs Desired)"
+          region = var.aws_region
           metrics = [
             ["ECS/ContainerInsights", "RunningTaskCount", "ClusterName", var.ecs_cluster_name, "ServiceName", var.ecs_service_name, { stat = "Average", color = "#2ca02c" }],
             [".", "DesiredTaskCount", ".", ".", ".", ".", { stat = "Average", color = "#1f77b4" }]
@@ -302,8 +302,8 @@ resource "aws_cloudwatch_dashboard" "application" {
         width  = 12
         height = 6
         properties = {
-          title   = "Backend Application Error Logs (Metric Filter)"
-          region  = var.aws_region
+          title  = "Backend Application Error Logs (Metric Filter)"
+          region = var.aws_region
           metrics = [
             ["${var.project_name}/${var.environment}/Application", "BackendErrorCount", { stat = "Sum", color = "#d62728" }]
           ]
@@ -319,8 +319,8 @@ resource "aws_cloudwatch_dashboard" "application" {
         width  = 12
         height = 6
         properties = {
-          title   = "CloudFront Global Requests & Download Volume"
-          region  = "us-east-1"
+          title  = "CloudFront Global Requests & Download Volume"
+          region = "us-east-1"
           metrics = [
             ["AWS/CloudFront", "Requests", "DistributionId", var.cloudfront_distribution_id, "Region", "Global", { stat = "Sum", yAxis = "left" }],
             [".", "BytesDownloaded", ".", ".", ".", ".", { stat = "Sum", yAxis = "right" }]
@@ -337,8 +337,8 @@ resource "aws_cloudwatch_dashboard" "application" {
         width  = 12
         height = 6
         properties = {
-          title   = "CloudFront Global Error Rates (4XX & 5XX)"
-          region  = "us-east-1"
+          title  = "CloudFront Global Error Rates (4XX & 5XX)"
+          region = "us-east-1"
           metrics = [
             ["AWS/CloudFront", "4xxErrorRate", "DistributionId", var.cloudfront_distribution_id, "Region", "Global", { stat = "Average", color = "#ff7f0e" }],
             [".", "5xxErrorRate", ".", ".", ".", ".", { stat = "Average", color = "#d62728" }]

@@ -80,11 +80,11 @@ resource "aws_db_instance" "main" {
   parameter_group_name   = aws_db_parameter_group.main.name
   vpc_security_group_ids = [var.database_security_group_id]
 
-  backup_retention_period = var.backup_retention_period
-  backup_window           = "03:00-04:00"
-  maintenance_window      = "Mon:04:30-Mon:05:30"
-  deletion_protection     = var.deletion_protection
-  skip_final_snapshot     = var.environment != "production"
+  backup_retention_period   = var.backup_retention_period
+  backup_window             = "03:00-04:00"
+  maintenance_window        = "Mon:04:30-Mon:05:30"
+  deletion_protection       = var.deletion_protection
+  skip_final_snapshot       = var.environment != "production"
   final_snapshot_identifier = var.environment == "production" ? "${var.project_name}-${var.environment}-db-final-snapshot" : null
 
   tags = merge(
