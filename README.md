@@ -53,7 +53,7 @@ This repository includes a production-grade, highly available AWS cloud architec
                   └────────┬───────────────┬────────┘
                            │               │
           Default Static   │               │ Dynamic API Routes
-          Assets (/*)      │               │ (/api/*, /health, /signup...)
+          Assets           │               │ 
                            ▼               ▼
                  ┌──────────────────┐  ┌─────────────────────────────┐
                  │  Amazon S3 Bucket│  │  Application Load Balancer  │
