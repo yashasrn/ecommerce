@@ -45,3 +45,13 @@ Thumbs.db
 tmp/
 temp/
 *.tmp
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+!*.tfvars.example
+!environments/*.tfvars
+.terraform.lock.hcl
