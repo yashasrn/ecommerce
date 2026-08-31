@@ -1,4 +1,4 @@
-# 🛍️ MyStore - Full Stack E-Commerce Platform
+# E-Commerce Platform
 
 ![Python](https://img.shields.io/badge/Python-3.8+-3776AB?logo=python&logoColor=white)
 ![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react&logoColor=black)
@@ -8,9 +8,9 @@
 ![License](https://img.shields.io/badge/License-Proprietary-red)
 ![AI](https://img.shields.io/badge/AI-Hugging%20Face-FFD21E?logo=huggingface&logoColor=black)
 
-**A modern e-commerce platform with AI-powered chatbot, seller management system, and comprehensive order tracking.**
+**A modern e-commerce platform with seller management system, and comprehensive order tracking.**
 
-Built with React, TypeScript, Flask, PostgreSQL (Render), and Hugging Face AI (Mistral-7B) for intelligent customer support.
+Built with React, TypeScript, Python(Flask), PostgreSQL .
 
 ---
 
@@ -35,13 +35,12 @@ Built with React, TypeScript, Flask, PostgreSQL (Render), and Hugging Face AI (M
 
 ---
 
-## ☁️ Enterprise Cloud Infrastructure & DevOps
+## Cloud Infrastructure,DevOps & Architecture Overview
 
-This repository includes a production-grade, highly available AWS cloud architecture provisioned with **Terraform**, automated with **GitHub Actions (CI/CD)**, and monitored via **CloudWatch & Amazon SNS**.
+This repository includes a production-grade, highly available AWS cloud architecture provisioned with Terraform , automated with GitHub Actions (CI/CD), and monitored via  CloudWatch & Amazon SNS.
 
-### 📖 DevOps Documentation & Deliverables
-* **[Comprehensive Approach & Architecture Guide](file:///Users/yashas/Desktop/project-infra/ecommerce/docs/APPROACH.md)**: Deep dive into architectural design decisions, multi-tier network topology, compute strategy (Fargate vs EKS), and cost optimization.
-* **[Challenges Faced & Resolutions](file:///Users/yashas/Desktop/project-infra/ecommerce/docs/CHALLENGES_AND_RESOLUTIONS.md)**: In-depth breakdown of realistic engineering challenges (CloudFront OAC SPA routing, private subnet ECR pulling, dynamic secret injection, dual-origin CORS, and OIDC CI/CD).
+* **[Comprehensive Approach & Architecture Guide] (file:///Users/yashas/Desktop/project-infra/ecommerce/docs/APPROACH.md)** : Deep dive into architectural design decisions, multi-tier network topology, compute strategy (Fargate vs EKS), and cost optimization.
+* **[Challenges Faced & Resolutions] (file:///Users/yashas/Desktop/project-infra/ecommerce/docs/CHALLENGES_AND_RESOLUTIONS.md)**: In-depth breakdown of realistic engineering challenges (CloudFront OAC SPA routing, private subnet ECR pulling, dynamic secret injection, dual-origin CORS, and OIDC CI/CD).
 * **[Monitoring, Logging & SRE Observability](file:///Users/yashas/Desktop/project-infra/ecommerce/docs/MONITORING_AND_OBSERVABILITY.md)**: Centralized logging setup, metric filters, operational alarms, and dual CloudWatch dashboards.
 
 ```
@@ -84,7 +83,7 @@ This repository includes a production-grade, highly available AWS cloud architec
 
 ---
 
-## ✨ Features
+## Features
 
 ### 🛒 Customer Features
 - 🔐 **User Authentication** - Signup/Login with OTP verification via Resend API
@@ -112,51 +111,16 @@ This repository includes a production-grade, highly available AWS cloud architec
 
 ---
 
-## 📸 Screenshots
-
-### Signup Page
-![Signup Page](./Images/Signup.png)
-
-### Login Page
-![Login Page](./Images/Login.png)
-
-### Home Page
-![Home Page](./Images/Home.png)
-
-### Seller Dashboard
-![Seller Dashboard](./Images/Seller_dashboard.png)
-
-### Seller Login
-![Seller Login](./Images/Seller_login.png)
-
-### Add New Product
-![Add New Product](./Images/Add_new_product.png)
-
-### Cart Page
-![Cart Page](./Images/Cart_page.png)
-
-### My Orders
-![My Orders](./Images/My_orders.png)
-
-### AI Chatbot
-![Chatbot](./Images/Chatbot.png)
-
-### Chatbot Conversation
-![Chatbot Responses](./Images/Chatbot_communication.png)
-
----
-
 ## 🛠️ Tech Stack
 
 ### Backend
 | Technology | Purpose |
 |------------|---------|
 | **Flask** | Python web framework |
-| **PostgreSQL** | Cloud database (Render) |
+| **PostgreSQL** | AWS(RDS)  |
 | **psycopg2** | PostgreSQL adapter for Python |
 | **bcrypt** | Password hashing |
 | **Resend API** | Email service for OTP & notifications |
-| **Hugging Face** | AI chatbot (Mistral-7B-Instruct-v0.2) |
 | **Flask-CORS** | Cross-origin requests |
 | **python-dotenv** | Environment variables |
 
@@ -169,168 +133,11 @@ This repository includes a production-grade, highly available AWS cloud architec
 | **Axios** | HTTP client |
 | **CSS3** | Styling |
 
-### Cloud Services
-- **Hugging Face API** - Mistral-7B-Instruct-v0.2 for chatbot
+### 3rd Party Services
 - **Resend** - Transactional email API
-- **Render** - PostgreSQL database hosting
-
 ---
-
-## 📁 Project Structure
-```bash
-ecommerce-project/
-├── Backend/ # Flask REST API (Python)
-│ ├── app.py # Main Flask application
-│ ├── create_tables.py # Database setup script
-│ ├── approve_seller.py # Admin seller management tool
-│ ├── .env.example # Environment variables template
-│ └── requirements.txt # Python dependencies
-├── frontend/ # React + TypeScript Frontend
-│ ├── src/ # Source code
-│ ├── public/ # Static assets
-│ ├── .env.production # Production config
-│ ├── vercel.json # Vercel deployment config
-│ └── package.json # Node dependencies
-├── Images/ # Project screenshots
-├── sql/ # SQL schema files (reference)
-│ ├── SingupDB.sql # User database schema
-│ └── seller_DB.sql # Seller database schema
-└── README.md # This file
-```
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Python 3.8+
-- Node.js 16+
-- Git
-- Hugging Face account (free) - [Sign up](https://huggingface.co/join)
-- Resend account (free tier) - [Sign up](https://resend.com/signup)
-- Render PostgreSQL database - [Create free database](https://render.com)
-
 
 ### Installation
-
-#### 1. Clone the Repository
-
-```bash
-git clone https://github.com/ShashankGowni/ecommerce-fullstack.git
-cd ecommerce-project
-```
-## Backend Setup
-**Navigate to Backend:**
-``bash
-cd Backend
-```
-**Create virtual environment:**
-```bash
-
-python -m venv venv
-```
-**Activate virtual environment:**
-
-```bash
-
-# Windows:
-venv\Scripts\activate
-pip install -r requirements.txt
-```
-## Create .env file:
-
-```env```
-
-# Email Configuration (Resend API)
-```text
-EMAIL_ADDRESS=your-email@example.com
-EMAIL_PASSWORD=not-used-with-resend
-RESEND_API_KEY=re_your_resend_api_key_here
-```
-
-# Database Configuration (PostgreSQL on Render)
-```DATABASE_URL=postgresql://username:password@host/database_name```
-
-# Hugging Face API
-``` text
-HF_API_KEY=hf_your_hugging_face_token_here
-HF_API_URL=https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2
-```
-**Setup Database (Auto-create tables):**
-
-```bash
-
-python create_tables.py
-```
-
-**This script will:**
-- Connect to your PostgreSQL database
-- Drop existing tables (if any)
-- Create all required tables
-- Set up indexes and triggers
-- Verify setup
-
-**Run Backend:**
-```bash
-
-python app.py
-```
-```🌐 Backend runs on http://localhost:5000```
-
-## Frontend Setup
-**Navigate to frontend:**
-
-```bash
-
-cd frontend
-```
-**Install dependencies:**
-
-```bash
-
-npm install
-```
-**Create .env.local for development:**
-
-```env```
-
-```VITE_API_URL=http://localhost:5000```
-
-**Run development server:**
-```bash
-npm run dev
-🌐 Frontend runs on http://localhost:5173
-```
-
-## Get API Keys
-**Render PostgreSQL Database**
-
-- Go to https://render.com/
-- Sign up for free account
-- Click "New" → "PostgreSQL"
-- Choose free plan
-- Copy the "External Database URL"
-- Add to .env as DATABASE_URL
-## Hugging Face API
-
-- Go to https://huggingface.co/join
-- Sign up for free
-- Go to Settings → Access Tokens
-- Click "New token"
-- Select "Read" permission
-- Copy token
-
-## Add to .env:
-```env```
-
-```HF_API_KEY=hf_your_token_here```
-## Resend API (Email/OTP)
-
-- Go to https://resend.com/signup
-- Sign up (3,000 free emails/month)
-- Go to API Keys
-- Click "Create API Key"
-- Copy the key
 
 ```env
 RESEND_API_KEY=re_your_key_here
@@ -420,10 +227,10 @@ Located in [`.github/workflows/`](file:///Users/yashas/Desktop/project-infra/eco
 Provisioned automatically via [`modules/monitoring`](file:///Users/yashas/Desktop/project-infra/ecommerce/infra/terraform/modules/monitoring):
 
 ### CloudWatch Metric Alarms
-* 🚨 **ECS High CPU / Memory**: Triggers alert when utilization exceeds 80% for 4 minutes.
-* 🚨 **ALB 5XX Error Rate**: Alerts if >5 server errors occur in a 5-minute window.
-* 🚨 **ALB High Latency**: Alerts if target response time averages >2.0s.
-* 🚨 **RDS High CPU & Low Storage**: Alerts when PostgreSQL CPU > 80% or free storage < 5 GB.
+*  **ECS High CPU / Memory**: Triggers alert when utilization exceeds 80% for 4 minutes.
+*  **ALB 5XX Error Rate**: Alerts if >5 server errors occur in a 5-minute window.
+*  **ALB High Latency**: Alerts if target response time averages >2.0s.
+*  **RDS High CPU & Low Storage**: Alerts when PostgreSQL CPU > 80% or free storage < 5 GB.
 
 ### CloudWatch Dashboards
 1. **`ecommerce-<env>-infrastructure-dashboard`**: ALB request rates, response times, HTTP status codes (2XX, 4XX, 5XX), ECS CPU/Memory, and RDS PostgreSQL metrics.
@@ -431,7 +238,7 @@ Provisioned automatically via [`modules/monitoring`](file:///Users/yashas/Deskto
 
 ---
 
-## 🔐 Security & Secret Management
+## Security & Secret Management
 
 * **Zero Hardcoded Passwords**: Database passwords generated with high entropy via Terraform and stored directly in **AWS Secrets Manager**.
 * **Direct Task Injection**: ECS tasks retrieve database connection credentials directly from Secrets Manager at startup into container memory.
