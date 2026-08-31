@@ -39,9 +39,9 @@ Built with React, TypeScript, Python(Flask), PostgreSQL .
 
 This repository includes a production-grade, highly available AWS cloud architecture provisioned with Terraform , automated with GitHub Actions (CI/CD), and monitored via  CloudWatch & Amazon SNS.
 
-* **[Comprehensive Approach & Architecture Guide] (file:///Users/yashas/Desktop/project-infra/ecommerce/docs/APPROACH.md)** : Deep dive into architectural design decisions, multi-tier network topology, compute strategy (Fargate vs EKS), and cost optimization.
-* **[Challenges Faced & Resolutions] (file:///Users/yashas/Desktop/project-infra/ecommerce/docs/CHALLENGES_AND_RESOLUTIONS.md)**: In-depth breakdown of realistic engineering challenges (CloudFront OAC SPA routing, private subnet ECR pulling, dynamic secret injection, dual-origin CORS, and OIDC CI/CD).
-* **[Monitoring, Logging & SRE Observability](file:///Users/yashas/Desktop/project-infra/ecommerce/docs/MONITORING_AND_OBSERVABILITY.md)**: Centralized logging setup, metric filters, operational alarms, and dual CloudWatch dashboards.
+* Comprehensive Approach & Architecture Guide (./ecommerce/docs/APPROACH.md) : Deep dive into architectural design decisions, multi-tier network topology, compute strategy (Fargate vs EKS), and cost optimization.
+* Challenges Faced & Resolutions (./ecommerce/docs/CHALLENGES_AND_RESOLUTIONS.md): In-depth breakdown of realistic engineering challenges faced during the development process (CloudFront OAC SPA routing, private subnet ECR pulling, dynamic secret injection, dual-origin CORS, and OIDC CI/CD).
+* Monitoring, Logging & Observability (./ecommerce/docs/MONITORING_AND_OBSERVABILITY.md)**: Centralized logging setup, metric filters, operational alarms, and CloudWatch dashboards.
 
 ```
                            Internet (Clients)
