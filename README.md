@@ -39,9 +39,9 @@ Built with React, TypeScript, Python(Flask), PostgreSQL .
 
 This repository includes a production-grade, highly available AWS cloud architecture provisioned with Terraform , automated with GitHub Actions (CI/CD), and monitored via  CloudWatch & Amazon SNS.
 
-* Comprehensive Approach & Architecture Guide (./ecommerce/docs/APPROACH.md) : Deep dive into architectural design decisions, multi-tier network topology, compute strategy (Fargate vs EKS), and cost optimization.
-* Challenges Faced & Resolutions (./ecommerce/docs/CHALLENGES_AND_RESOLUTIONS.md): In-depth breakdown of realistic engineering challenges faced during the development process (CloudFront OAC SPA routing, private subnet ECR pulling, dynamic secret injection, dual-origin CORS, and OIDC CI/CD).
-* Monitoring, Logging & Observability (./ecommerce/docs/MONITORING_AND_OBSERVABILITY.md)**: Centralized logging setup, metric filters, operational alarms, and CloudWatch dashboards.
+* [Comprehensive Approach & Architecture Guide](docs/APPROACH.md): Deep dive into architectural design decisions, multi-tier network topology, compute strategy (Fargate vs EKS), and cost optimization.
+* [Challenges Faced & Resolutions](docs/CHALLENGES_AND_RESOLUTIONS.md): In-depth breakdown of realistic engineering challenges faced during the development process (CloudFront OAC SPA routing, private subnet ECR pulling, dynamic secret injection, dual-origin CORS, and OIDC CI/CD).
+* [Monitoring, Logging & Observability](docs/MONITORING_AND_OBSERVABILITY.md): Centralized logging setup, metric filters, operational alarms, and CloudWatch dashboards.
 
 ```
                            Internet (Clients)
@@ -147,7 +147,7 @@ RESEND_API_KEY=re_your_key_here
 
 ## 🏗️ Infrastructure Provisioning (Terraform)
 
-All AWS infrastructure is managed as code under [`infra/terraform/`](file:///Users/yashas/Desktop/project-infra/ecommerce/infra/terraform).
+All AWS infrastructure is managed as code under [`infra/terraform/`](infra/terraform).
 
 ### Prerequisites
 * [Terraform >= 1.5.0](https://www.terraform.io/downloads.html)
@@ -202,7 +202,7 @@ terraform destroy -var-file="environments/staging.tfvars"
 
 ## 🔄 CI/CD Pipelines (GitHub Actions)
 
-Located in [`.github/workflows/`](file:///Users/yashas/Desktop/project-infra/ecommerce/.github/workflows):
+Located in [`.github/workflows/`](.github/workflows):
 
 ### 1. Pull Request Verification (`ci.yml`)
 * **Triggers**: On pull request against `main` or `develop`.
@@ -224,7 +224,7 @@ Located in [`.github/workflows/`](file:///Users/yashas/Desktop/project-infra/eco
 
 ## 📊 Monitoring & Observability
 
-Provisioned automatically via [`modules/monitoring`](file:///Users/yashas/Desktop/project-infra/ecommerce/infra/terraform/modules/monitoring):
+Provisioned automatically via [`modules/monitoring`](infra/terraform/modules/monitoring):
 
 ### CloudWatch Metric Alarms
 *  **ECS High CPU / Memory**: Triggers alert when utilization exceeds 80% for 4 minutes.
