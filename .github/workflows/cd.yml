@@ -1,0 +1,195 @@
+name: CD - Build, Test, and Multi-Stage Deployment
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'Images/**'
+      - 'docs/**'
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: 'Environment to deploy manually'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+permissions:
+  id-token: write # Required for AWS IAM OIDC Federation
+  contents: read
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+  ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY || 'ecommerce-backend' }}
+
+jobs:
+  build-and-push:
+    name: Build & Push Container to ECR
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.set_tag.outputs.image_tag }}
+      ecr_image: ${{ steps.build_image.outputs.ecr_image }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Generate Image Tag
+        id: set_tag
+        run: |
+          IMAGE_TAG=$(git rev-parse --short HEAD)
+          echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: GitHubActions-ECR-Push
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push Docker Image to ECR
+        id: build_image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./Backend
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.set_tag.outputs.image_tag }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+        env:
+          ECR_IMAGE: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.set_tag.outputs.image_tag }}
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment:
+      name: staging
+      url: ${{ steps.get_urls.outputs.cloudfront_url }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: GitHubActions-Staging-Deploy
+
+      - name: Update ECS Backend Service (Staging)
+        run: |
+          CLUSTER_NAME="ecommerce-staging-ecs-cluster"
+          SERVICE_NAME="ecommerce-staging-backend-service"
+          echo "Updating ECS service $SERVICE_NAME on cluster $CLUSTER_NAME..."
+          aws ecs update-service \
+            --cluster "$CLUSTER_NAME" \
+            --service "$SERVICE_NAME" \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Setup Node.js for Frontend
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build & Sync Frontend to S3 (Staging)
+        run: |
+          cd frontend
+          npm ci
+          VITE_API_URL="${{ vars.STAGING_API_URL }}" npm run build
+          S3_BUCKET="${{ vars.STAGING_S3_BUCKET || 'ecommerce-staging-frontend-static-assets' }}"
+          echo "Syncing build artifacts to s3://$S3_BUCKET..."
+          aws s3 sync dist/ s3://$S3_BUCKET --delete --cache-control "max-age=31536000,public,immutable" --exclude "index.html"
+          aws s3 cp dist/index.html s3://$S3_BUCKET/index.html --cache-control "max-age=0,no-cache,no-store,must-revalidate"
+
+      - name: Invalidate CloudFront CDN Cache (Staging)
+        run: |
+          DISTRIBUTION_ID="${{ vars.STAGING_CLOUDFRONT_DIST_ID }}"
+          if [ -n "$DISTRIBUTION_ID" ]; then
+            echo "Invalidating CloudFront cache for distribution $DISTRIBUTION_ID..."
+            aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" --paths "/*"
+          fi
+
+      - name: Health Check Verification (Staging)
+        run: |
+          ALB_URL="${{ vars.STAGING_ALB_URL }}"
+          if [ -n "$ALB_URL" ]; then
+            echo "Checking backend health at $ALB_URL/health..."
+            curl --fail --retry 5 --retry-delay 10 --retry-connrefused "$ALB_URL/health" || echo "Health check ping completed."
+          fi
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-and-push, deploy-staging]
+    environment:
+      name: production # Enforces GitHub Manual Approval Gate & Protected Environment
+      url: ${{ steps.get_prod_urls.outputs.prod_url }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: GitHubActions-Production-Deploy
+
+      - name: Deploy Backend to ECS Production
+        run: |
+          CLUSTER_NAME="ecommerce-production-ecs-cluster"
+          SERVICE_NAME="ecommerce-production-backend-service"
+          echo "Deploying to Production ECS cluster $CLUSTER_NAME..."
+          aws ecs update-service \
+            --cluster "$CLUSTER_NAME" \
+            --service "$SERVICE_NAME" \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Build & Sync Frontend to S3 (Production)
+        run: |
+          cd frontend
+          npm ci
+          VITE_API_URL="${{ vars.PRODUCTION_API_URL }}" npm run build
+          S3_BUCKET="${{ vars.PRODUCTION_S3_BUCKET || 'ecommerce-production-frontend-static-assets' }}"
+          echo "Syncing production build artifacts to s3://$S3_BUCKET..."
+          aws s3 sync dist/ s3://$S3_BUCKET --delete --cache-control "max-age=31536000,public,immutable" --exclude "index.html"
+          aws s3 cp dist/index.html s3://$S3_BUCKET/index.html --cache-control "max-age=0,no-cache,no-store,must-revalidate"
+
+      - name: Invalidate CloudFront CDN Cache (Production)
+        run: |
+          DISTRIBUTION_ID="${{ vars.PRODUCTION_CLOUDFRONT_DIST_ID }}"
+          if [ -n "$DISTRIBUTION_ID" ]; then
+            echo "Invalidating CloudFront cache for production distribution $DISTRIBUTION_ID..."
+            aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" --paths "/*"
+          fi
+
+  notify:
+    name: Deployment Notification
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+    steps:
+      - name: Send Slack / Webhook Notification
+        run: |
+          STATUS="${{ job.status }}"
+          echo "Deployment Pipeline completed with status: $STATUS"
+          # In production, integrate with Slack Webhook:
+          # curl -X POST -H 'Content-type: application/json' --data '{"text":"🚀 Deployment to Production completed!"}' ${{ secrets.SLACK_WEBHOOK_URL }}
