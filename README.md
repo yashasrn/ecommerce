@@ -16,18 +16,71 @@ Built with React, TypeScript, Flask, PostgreSQL (Render), and Hugging Face AI (M
 
 ## 📚 Table of Contents
 
-- [Features](#-features)
-- [Screenshots](#-screenshots)
-- [Tech Stack](#-tech-stack)
-- [Project Structure](#-project-structure)
-- [Getting Started](#-getting-started)
+- [☁️ Enterprise Cloud Infrastructure & DevOps](#️-enterprise-cloud-infrastructure--devops)
+- [✨ Features](#-features)
+- [📸 Screenshots](#-screenshots)
+- [🛠️ Tech Stack](#-tech-stack)
+- [📁 Project Structure](#-project-structure)
+- [🚀 Getting Started](#-getting-started)
+- [🏗️ Infrastructure Provisioning (Terraform)](#-infrastructure-provisioning-terraform)
+- [🔄 CI/CD Pipelines (GitHub Actions)](#-cicd-pipelines-github-actions)
+- [📊 Monitoring & Observability](#-monitoring--observability)
+- [🔐 Security & Secret Management](#-security--secret-management)
 - [API Endpoints](#-api-endpoints)
 - [Database Schema](#-database-schema)
 - [Admin Tools](#-admin-tools)
-- [Security Features](#-security-features)
 - [Troubleshooting](#-troubleshooting)
 - [License](#-license)
 - [Contact](#-contact)
+
+---
+
+## ☁️ Enterprise Cloud Infrastructure & DevOps
+
+This repository includes a production-grade, highly available AWS cloud architecture provisioned with **Terraform**, automated with **GitHub Actions (CI/CD)**, and monitored via **CloudWatch & Amazon SNS**.
+
+### 📖 DevOps Documentation & Deliverables
+* **[Comprehensive Approach & Architecture Guide](file:///Users/yashas/Desktop/project-infra/ecommerce/docs/APPROACH.md)**: Deep dive into architectural design decisions, multi-tier network topology, compute strategy (Fargate vs EKS), and cost optimization.
+* **[Challenges Faced & Resolutions](file:///Users/yashas/Desktop/project-infra/ecommerce/docs/CHALLENGES_AND_RESOLUTIONS.md)**: In-depth breakdown of realistic engineering challenges (CloudFront OAC SPA routing, private subnet ECR pulling, dynamic secret injection, dual-origin CORS, and OIDC CI/CD).
+* **[Monitoring, Logging & SRE Observability](file:///Users/yashas/Desktop/project-infra/ecommerce/docs/MONITORING_AND_OBSERVABILITY.md)**: Centralized logging setup, metric filters, operational alarms, and dual CloudWatch dashboards.
+
+```
+                           Internet (Clients)
+                                   │
+                                   ▼
+                  ┌─────────────────────────────────┐
+                  │    Amazon CloudFront (CDN)      │
+                  │   (Global Edge Caching & WAF)   │
+                  └────────┬───────────────┬────────┘
+                           │               │
+          Default Static   │               │ Dynamic API Routes
+          Assets (/*)      │               │ (/api/*, /health, /signup...)
+                           ▼               ▼
+                 ┌──────────────────┐  ┌─────────────────────────────┐
+                 │  Amazon S3 Bucket │  │  Application Load Balancer  │
+                 │ (Origin Access   │  │   (Public Subnets / ALB)    │
+                 │   Control - OAC) │  └──────────────┬──────────────┘
+                 └──────────────────┘                 │
+                                                      ▼
+                                       ┌─────────────────────────────┐
+                                       │   AWS VPC (10.0.0.0/16)     │
+                                       │                             │
+                                       │  ┌───────────────────────┐  │
+                                       │  │ Private App Subnets   │  │
+                                       │  │ (ECS Fargate Service) │  │
+                                       │  │  ┌─────────────────┐  │  │
+                                       │  │  │ Flask App (API) │  │  │
+                                       │  │  │ Non-root user   │  │  │
+                                       │  │  └────────┬────────┘  │  │
+                                       │  └───────────┼───────────┘  │
+                                       │              │              │
+                                       │  ┌───────────▼───────────┐  │
+                                       │  │ Private DB Subnets    │  │
+                                       │  │ (RDS PostgreSQL 16)   │  │
+                                       │  │ Multi-AZ / Encrypted  │  │
+                                       │  └───────────────────────┘  │
+                                       └─────────────────────────────┘
+```
 
 ---
 
@@ -279,12 +332,113 @@ npm run dev
 - Click "Create API Key"
 - Copy the key
 
-## Add to .env:
-```env```
+```env
+RESEND_API_KEY=re_your_key_here
+```
 
-```RESEND_API_KEY=re_your_key_here```
+---
 
-## 🔌 API Endpoints
+## 🏗️ Infrastructure Provisioning (Terraform)
+
+All AWS infrastructure is managed as code under [`infra/terraform/`](file:///Users/yashas/Desktop/project-infra/ecommerce/infra/terraform).
+
+### Prerequisites
+* [Terraform >= 1.5.0](https://www.terraform.io/downloads.html)
+* [AWS CLI v2](https://aws.amazon.com/cli/) configured with appropriate IAM permissions
+* S3 Bucket + DynamoDB Table for remote state locking (optional for local experimentation)
+
+### Modular Infrastructure Structure
+* `modules/vpc`: 3-Tier VPC with Public, Private App, and Isolated DB subnets across 2 AZs.
+* `modules/security`: Strictly chained least-privilege security groups (Internet -> ALB -> ECS -> RDS).
+* `modules/s3_frontend`: Encrypted S3 bucket with CloudFront Origin Access Control (OAC).
+* `modules/alb`: Internet-facing ALB with `/health` target group and HTTP listeners.
+* `modules/cloudfront`: Global CDN with dual origins (S3 static SPA + ALB dynamic API).
+* `modules/rds`: Multi-AZ PostgreSQL 16 on GP3 storage with automated KMS encryption & daily backups.
+* `modules/ecr`: Container registry with image scanning on push and automated lifecycle policies.
+* `modules/ecs`: Auto-scaling ECS Fargate cluster with non-root task execution and dynamic Secrets Manager injection.
+* `modules/monitoring`: Centralized CloudWatch Log Groups, Metric Filters, SNS Alerts, and 2 Complete SRE Dashboards.
+
+### Deployment Commands
+
+#### 1. Staging Deployment
+```bash
+cd infra/terraform
+
+# Initialize Terraform modules and backend
+terraform init
+
+# Validate configuration syntax
+terraform validate
+
+# Plan provisioning for staging
+terraform plan -var-file="environments/staging.tfvars" -out="staging.tfplan"
+
+# Apply staging infrastructure
+terraform apply "staging.tfplan"
+```
+
+#### 2. Production Deployment
+```bash
+# Plan provisioning for production
+terraform plan -var-file="environments/production.tfvars" -out="production.tfplan"
+
+# Apply production infrastructure
+terraform apply "production.tfplan"
+```
+
+#### 3. Teardown
+```bash
+terraform destroy -var-file="environments/staging.tfvars"
+```
+
+---
+
+## 🔄 CI/CD Pipelines (GitHub Actions)
+
+Located in [`.github/workflows/`](file:///Users/yashas/Desktop/project-infra/ecommerce/.github/workflows):
+
+### 1. Pull Request Verification (`ci.yml`)
+* **Triggers**: On pull request against `main` or `develop`.
+* **Jobs**:
+  * **Terraform Checks**: `terraform fmt -check`, `terraform validate`.
+  * **Backend Checks**: Python 3.12 `flake8` linting, `pytest` unit tests, `bandit` SAST scan, `safety` dependency scan.
+  * **Frontend Checks**: ESLint validation, TypeScript validation, dry-run production asset build (`npm run build`).
+  * **Security Scan**: Container vulnerability scanning via **Aqua Security Trivy**.
+
+### 2. Multi-Stage Continuous Deployment (`cd.yml`)
+* **Authentication**: **Keyless AWS IAM OIDC Federation** (`aws-actions/configure-aws-credentials`) — zero static keys stored in GitHub Secrets.
+* **Pipeline Stages**:
+  1. **Build & Push**: Builds multi-stage Docker image, tags with commit SHA, and pushes to Amazon ECR.
+  2. **Deploy to Staging**: Automatically updates Staging ECS Fargate service, syncs frontend to Staging S3, invalidates CloudFront cache, and verifies `/health`.
+  3. **Deploy to Production**: Enforces **GitHub Environments Manual Approval Gate** before rolling update to Production ECS and Production S3/CloudFront.
+  4. **Notifications**: Automated deployment summary to Slack / Webhook.
+
+---
+
+## 📊 Monitoring & Observability
+
+Provisioned automatically via [`modules/monitoring`](file:///Users/yashas/Desktop/project-infra/ecommerce/infra/terraform/modules/monitoring):
+
+### CloudWatch Metric Alarms
+* 🚨 **ECS High CPU / Memory**: Triggers alert when utilization exceeds 80% for 4 minutes.
+* 🚨 **ALB 5XX Error Rate**: Alerts if >5 server errors occur in a 5-minute window.
+* 🚨 **ALB High Latency**: Alerts if target response time averages >2.0s.
+* 🚨 **RDS High CPU & Low Storage**: Alerts when PostgreSQL CPU > 80% or free storage < 5 GB.
+
+### CloudWatch Dashboards
+1. **`ecommerce-<env>-infrastructure-dashboard`**: ALB request rates, response times, HTTP status codes (2XX, 4XX, 5XX), ECS CPU/Memory, and RDS PostgreSQL metrics.
+2. **`ecommerce-<env>-application-dashboard`**: ECS active vs. desired task count, backend application error logs (metric filter), CloudFront global bandwidth, and edge error rates.
+
+---
+
+## 🔐 Security & Secret Management
+
+* **Zero Hardcoded Passwords**: Database passwords generated with high entropy via Terraform and stored directly in **AWS Secrets Manager**.
+* **Direct Task Injection**: ECS tasks retrieve database connection credentials directly from Secrets Manager at startup into container memory.
+* **Defense in Depth**: Database subnets have zero internet routing; compute tasks reside in private subnets behind managed NAT gateways; public ingress is strictly handled by CloudFront CDN and ALB.
+* **Backup & Recovery**: Daily automated RDS snapshots with point-in-time recovery (PITR) up to 30 days and deletion protection in production.
+
+---
 **Authentication**
 ```
 POST /signup - User registration
