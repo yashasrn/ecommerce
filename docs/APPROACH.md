@@ -27,7 +27,7 @@ The platform is designed around cloud-native Twelve-Factor principles, prioritiz
             Assets (/*)      │               │ (/api/*, /health, /signup...)
                              ▼               ▼
                    ┌──────────────────┐  ┌─────────────────────────────┐
-                   │  Amazon S3 Bucket │  │  Application Load Balancer  │
+                   │  Amazon S3 Bucket│  │  Application Load Balancer  │
                    │ (Origin Access   │  │   (Public Subnets / ALB)    │
                    │   Control - OAC) │  └──────────────┬──────────────┘
                    └──────────────────┘                 │
