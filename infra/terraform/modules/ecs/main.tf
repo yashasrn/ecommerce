@@ -218,7 +218,7 @@ resource "aws_ecs_service" "backend" {
   lifecycle {
     ignore_changes = [
       task_definition, # Allows CI/CD pipelines to update task definitions without Terraform state drift
-      desired_count   # Allows autoscaling to adjust desired_count
+      desired_count    # Allows autoscaling to adjust desired_count
     ]
   }
 }
