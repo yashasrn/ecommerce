@@ -78,7 +78,7 @@ jobs:
     needs: build-and-push
     environment:
       name: staging
-      url: ${{ steps.get_urls.outputs.cloudfront_url }}
+      url: ${{ vars.STAGING_APP_URL }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -140,7 +140,7 @@ jobs:
     needs: [build-and-push, deploy-staging]
     environment:
       name: production # Enforces GitHub Manual Approval Gate & Protected Environment
-      url: ${{ steps.get_prod_urls.outputs.prod_url }}
+      url: ${{ vars.PRODUCTION_APP_URL }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4

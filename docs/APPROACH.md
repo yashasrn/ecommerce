@@ -113,12 +113,14 @@ This pipeline uses **AWS OpenID Connect (OIDC) Federation**:
 1. **Terraform Format & Lint**: Runs `terraform fmt -check`, `terraform init -backend=false`, and `terraform validate`.
 2. **Backend Unit & SAST Testing**:
    * Runs Python 3.12 `flake8` linting.
-   * Executes static security scans with `bandit` and dependency checks with `safety`.
+   * Executes static application security testing (SAST) with `bandit`.
+   * Performs Python dependency vulnerability scanning with `pip-audit`.
    * Runs `pytest tests/` unit and integration test suite.
 3. **Frontend Build Validation**:
    * Runs ESLint and production asset build (`npm run build`).
-4. **Vulnerability Scanning**:
-   * Scans container image layers and repo filesystem using **Aqua Security Trivy** for CVEs.
+4. **Secret Leak Detection & Container Scanning**:
+   * Scans full repository commit history using **Gitleaks** to prevent credential/API key leakage.
+   * Scans container image layers and filesystem using **Aqua Security Trivy** for CVEs.
 
 ### 5.3 Continuous Deployment Pipeline (`cd.yml`)
 ```
